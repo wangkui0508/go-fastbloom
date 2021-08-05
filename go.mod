@@ -1,4 +1,4 @@
-module github.com/wangkui0508/fastbloom
+module github.com/wangkui0508/go-fastbloom
 
 go 1.16
 
