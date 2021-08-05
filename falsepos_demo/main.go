@@ -1,23 +1,24 @@
 package main
 
 import (
+	//"encoding/binary"
 	"fmt"
 	"os"
 
-	"github.com/zeebo/xxh3"
 	"github.com/coinexchain/randsrc"
+	"github.com/zeebo/xxh3"
 
 	"github.com/wangkui0508/fastbloom"
 )
 
 type BloomFilter struct {
-	data  []bool
+	data          []bool
 	probePerEntry int
 }
 
 func NewBloomFilter(size, probePerEntry int) *BloomFilter {
 	return &BloomFilter{
-		data: make([]bool, size),
+		data:          make([]bool, size),
 		probePerEntry: probePerEntry,
 	}
 }
@@ -31,7 +32,7 @@ func (bf *BloomFilter) Reset() {
 func (bf *BloomFilter) op(in []byte, isAdd bool) bool {
 	for i := 0; i < bf.probePerEntry; i++ {
 		hash := xxh3.Hash(append([]byte{byte(i)}, in...))
-		offset := int(hash>>1)%len(bf.data)
+		offset := int(hash>>1) % len(bf.data)
 		if isAdd {
 			bf.data[offset] = true
 		} else if !bf.data[offset] {
@@ -49,21 +50,23 @@ func (bf *BloomFilter) Has(in []byte) bool {
 	return bf.op(in, false)
 }
 
-
 func CheckParam(rs randsrc.RandSrc, bitsPerEntry, probePerEntry int) {
-	const entryCount = 2500000;
+	const entryCount = 2500000
 	bfRef := NewBloomFilter(bitsPerEntry*entryCount, probePerEntry)
-	slotCount := (bitsPerEntry*entryCount + fastbloom.SlotBitCount - 1) / fastbloom.SlotBitCount;
+	slotCount := (bitsPerEntry*entryCount + fastbloom.SlotBitCount - 1) / fastbloom.SlotBitCount
 	var seed [8]byte
 	bf := fastbloom.NewFastBloom(slotCount, probePerEntry, seed)
+	//bz := make([]byte, 4)
 	for i := 0; i < entryCount; i++ {
 		bz := rs.GetBytes(32)
+		//binary.LittleEndian.PutUint32(bz, uint32(i))
 		bfRef.Add(bz)
 		bf.Add(bz)
 	}
 	var bfRefPosCount, bfPosCount int
 	for i := 0; i < entryCount; i++ {
 		bz := rs.GetBytes(32)
+		//binary.LittleEndian.PutUint32(bz, uint32(i+entryCount+1))
 		if bfRef.Has(bz) {
 			bfRefPosCount++
 		}
@@ -82,10 +85,14 @@ func main() {
 		return
 	}
 	rs := randsrc.NewRandSrcFromFileWithSeed(randFilename, []byte{0})
-	for bitsPerEntry := 8; bitsPerEntry <= 24; bitsPerEntry++  {
-		for probePerEntry := 3; probePerEntry <= bitsPerEntry; probePerEntry++ {
+	//for bitsPerEntry := 8; bitsPerEntry <= 24; bitsPerEntry++  {
+	//	for probePerEntry := 3; probePerEntry <= bitsPerEntry; probePerEntry++ {
+	//		CheckParam(rs, bitsPerEntry, probePerEntry)
+	//	}
+	//}
+	for bitsPerEntry := 24; bitsPerEntry <= 40; bitsPerEntry++ {
+		for probePerEntry := 13; probePerEntry <= 16; probePerEntry++ {
 			CheckParam(rs, bitsPerEntry, probePerEntry)
 		}
 	}
 }
-
